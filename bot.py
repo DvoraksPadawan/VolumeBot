@@ -54,6 +54,7 @@ class Exchange():
         url = self.base_url + endpoint
         headers = self.generate_signature('GET', endpoint)
         response = session.get(url, headers=headers).json()
+        print(response)
         try: 
             print("try position")
             isOpen, quantity = response[0]['isOpen'], response[0]['currentQty']
@@ -78,36 +79,9 @@ class Exchange():
         response = session.post(url, headers=headers, data=data_json).json()
         return response
     
-    def cancel_all_orders(self, timeout = 1):
-        endpoint = f'order/cancelAllAfter?timeout={timeout}'
-        url = self.base_url + endpoint
-        headers = self.generate_signature('POST', endpoint)
-        response = session.post(url, headers=headers).json()
-        return response
-    
     def delete_all_orders(self):
         endpoint = f'order/all'
         url = self.base_url + endpoint
-        headers = self.generate_signature('DELETE', endpoint)
-        response = session.delete(url, headers=headers).json()
-        return response
-    
-    def get_orders(self):
-        endpoint = f'order?count=2&reverse=true'
-        url = self.base_url + endpoint
-        headers = self.generate_signature('GET', endpoint)
-        response = session.get(url, headers=headers).json()
-        try: 
-            print("try get orders")
-            order1_id, order2_id = response[0]['orderID'], response[1]['orderID']
-        except KeyError as e:
-            order1_id, order2_id = self.get_orders()
-        return order1_id, order2_id
-    
-    def delete_order(self, order_id):
-        endpoint = f'order/{order_id}'
-        url = self.base_url + endpoint
-        print(url)
         headers = self.generate_signature('DELETE', endpoint)
         response = session.delete(url, headers=headers).json()
         return response
@@ -116,7 +90,7 @@ class Exchange():
 class Bot():
     def __init__(self, _exchange):
         self.exchange = _exchange
-        self.sleeping_time = 10
+        self.sleeping_time = 1
         self.my_last_bid = 0
         self.my_last_ask = 0
         self.my_last_quantity = 0
@@ -143,8 +117,6 @@ class Bot():
             changed = True
         if changed:
             self.exchange.delete_all_orders()
-            #delete self.old orders
-            #self.old orders =
             self.calculate_order(current_quantity, bid, ask)
 
     def trade(self):
@@ -157,6 +129,4 @@ class Bot():
 
 bitmex = Exchange(False)
 bot = Bot(bitmex)
-#order1, order2 = bitmex.get_orders()
-#print(bitmex.delete_order(order1))
 bot.trade()
