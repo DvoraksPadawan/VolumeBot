@@ -75,10 +75,8 @@ class Bot():
         self.my_last_ask = 0
         self.my_last_quantity = 0
         
-    def calculate_order(self):
-        position, current_quantity = self.exchange.get_position()
+    def calculate_order(self, current_quantity, bid, ask):
         quantity = abs(current_quantity) + self.exchange.standard_quantity
-        bid, ask = self.exchange.get_quote()
         if current_quantity >= 0:
             self.exchange.place_order('Sell', quantity, ask)
             self.my_last_ask = ask
@@ -88,16 +86,16 @@ class Bot():
 
     def calculate_change(self):
         changed = False
-        bid, ask = self.exchange.get_quote()
-        if bid != self.my_last_bid or ask != self.my_last_ask:
-            changed = True
         position, current_quantity = self.exchange.get_position()
         if current_quantity != self.my_last_quantity:
             changed = True
         self.my_last_quantity = current_quantity
+        bid, ask = self.exchange.get_quote()
+        if bid != self.my_last_bid or ask != self.my_last_ask:
+            changed = True
         if changed:
             self.exchange.cancel_orders()
-            self.calculate_order()
+            self.calculate_order(current_quantity, bid, ask)
 
 
 
