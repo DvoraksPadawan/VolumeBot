@@ -82,19 +82,18 @@ class Exchange():
 class Bot():
     def __init__(self, _exchange):
         self.exchange = _exchange
-        self.sleeping_time = 5
+        self.sleeping_time = 10
         self.last_bid = 0
         self.last_ask = 0
         
     def calculate_order(self):
         position, current_quantity = self.exchange.get_position()
-        quantity = current_quantity + self.exchange.standard_quantity
+        quantity = abs(current_quantity) + self.exchange.standard_quantity
         bid, ask = self.exchange.get_quote()
         if current_quantity >= 0 and self.last_ask != ask:
             self.exchange.place_order('Sell', quantity, ask)
             self.last_ask = ask
         if current_quantity <= 0 and self.last_bid != bid:
-            quantity = -1*quantity
             self.exchange.place_order('Buy', quantity, bid)
             self.last_bid = bid
 
