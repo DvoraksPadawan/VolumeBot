@@ -81,7 +81,7 @@ class Exchange():
 class Bot():
     def __init__(self, _exchange):
         self.exchange = _exchange
-        self.sleeping_time = 1
+        self.sleeping_time = 5
         self.my_last_bid = 0
         self.my_last_ask = 0
         self.my_last_quantity = 0
@@ -112,12 +112,14 @@ class Bot():
 
     def trade(self):
         while True:
-            time.sleep(self.sleeping_time)
+            position, current_quantity = self.exchange.get_position()
+            if current_quantity == 0:
+                time.sleep(self.sleeping_time)
             self.calculate_change()
         
             
 
 
-bitmex = Exchange()
+bitmex = Exchange(False)
 bot = Bot(bitmex)
 bot.trade()
