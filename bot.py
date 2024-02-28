@@ -5,6 +5,16 @@ import hashlib
 import hmac
 import os
 
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+session = requests.Session()
+retry = Retry(connect=3, backoff_factor=0.5)
+adapter = HTTPAdapter(max_retries=retry)
+session.mount('http://', adapter)
+session.mount('https://', adapter)
+
 class Exchange():
     def __init__(self, testnet = True):
         if testnet:
@@ -31,7 +41,7 @@ class Exchange():
         endpoint = f'quote?symbol={self.symbol}&count=1&reverse=true'
         url = self.base_url + endpoint
         headers = self.generate_signature('GET', endpoint)
-        response = requests.get(url, headers=headers).json()
+        response = session.get(url, headers=headers).json()
         bid, ask = response[0]['bidPrice'], response[0]['askPrice']
         return bid, ask
     
@@ -39,8 +49,9 @@ class Exchange():
         endpoint = f'position?filter=%7B%22symbol%22%3A%20%22{self.symbol}%22%7D'
         url = self.base_url + endpoint
         headers = self.generate_signature('GET', endpoint)
-        response = requests.get(url, headers=headers).json()
+        response = session.get(url, headers=headers).json()
         isOpen, quantity = response[0]['isOpen'], response[0]['currentQty']
+        print(response)
         return isOpen, quantity
     
     def place_order(self, side, quantity, price):
@@ -57,20 +68,20 @@ class Exchange():
         data_json = json.dumps(data)
         headers = self.generate_signature('POST', endpoint, data_json)
         headers['Content-Type'] = 'application/json'
-        response = requests.post(url, headers=headers, data=data_json).json()
+        response = session.post(url, headers=headers, data=data_json).json()
         return response
     
     def cancel_orders(self, timeout = 1):
         endpoint = f'order/cancelAllAfter?timeout={timeout}'
         url = self.base_url + endpoint
         headers = self.generate_signature('POST', endpoint)
-        response = requests.post(url, headers=headers).json()
+        response = session.post(url, headers=headers).json()
         return response
     
 class Bot():
     def __init__(self, _exchange):
         self.exchange = _exchange
-        self.sleeping_time = 5
+        self.sleeping_time = 1
         self.my_last_bid = 0
         self.my_last_ask = 0
         self.my_last_quantity = 0
@@ -107,15 +118,7 @@ class Bot():
             
 
     
-    
-print()
+
 bitmex = Exchange()
-#print(bitmex.get_quote())
-#print(bitmex.get_position())
-#print(bitmex.place_order('Buy',1000,60000))
 bot = Bot(bitmex)
-#print(bot.calculate_order())
-#time.sleep(5)
-#print(bitmex.cancel_orders(100))
-#bitmex.place_order('Sell', 1000, 60000)
 bot.trade()
