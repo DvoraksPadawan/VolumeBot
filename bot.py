@@ -102,13 +102,13 @@ class Bot():
             changed = True
         self.my_last_quantity = current_quantity
         bid, ask = self.exchange.get_quote()
-        if bid != self.my_last_bid or ask != self.my_last_ask:
+        if bid != self.my_last_bid and current_quantity <= 0:
+            changed = True
+        if ask != self.my_last_ask and current_quantity >= 0:
             changed = True
         if changed:
             self.exchange.cancel_orders()
             self.calculate_order(current_quantity, bid, ask)
-
-
 
     def trade(self):
         while True:
@@ -117,7 +117,6 @@ class Bot():
         
             
 
-    
 
 bitmex = Exchange()
 bot = Bot(bitmex)
