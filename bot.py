@@ -41,17 +41,29 @@ class Exchange():
         endpoint = f'quote?symbol={self.symbol}&count=1&reverse=true'
         url = self.base_url + endpoint
         headers = self.generate_signature('GET', endpoint)
+        #headers['Accept'] = 'application/json'
         response = session.get(url, headers=headers).json()
-        bid, ask = response[0]['bidPrice'], response[0]['askPrice']
+        #bid, ask = response[0]['bidPrice'], response[0]['askPrice']
+        try:
+            print("try quote")
+            bid, ask = response[0]['bidPrice'], response[0]['askPrice']
+        except KeyError as e:
+            bid,ask = self.get_quote()
         return bid, ask
     
     def get_position(self):
         endpoint = f'position?filter=%7B%22symbol%22%3A%20%22{self.symbol}%22%7D'
         url = self.base_url + endpoint
         headers = self.generate_signature('GET', endpoint)
+        #headers['Accept'] = 'application/json'
         response = session.get(url, headers=headers).json()
-        isOpen, quantity = response[0]['isOpen'], response[0]['currentQty']
         print(response)
+        #isOpen, quantity = response[0]['isOpen'], response[0]['currentQty']
+        try: 
+            print("try position")
+            isOpen, quantity = response[0]['isOpen'], response[0]['currentQty']
+        except KeyError as e:
+            isOpen, quantity = self.get_position()
         return isOpen, quantity
     
     def place_order(self, side, quantity, price):
@@ -68,6 +80,7 @@ class Exchange():
         data_json = json.dumps(data)
         headers = self.generate_signature('POST', endpoint, data_json)
         headers['Content-Type'] = 'application/json'
+        #headers['Accept'] = 'application/json'
         response = session.post(url, headers=headers, data=data_json).json()
         return response
     
@@ -75,13 +88,14 @@ class Exchange():
         endpoint = f'order/cancelAllAfter?timeout={timeout}'
         url = self.base_url + endpoint
         headers = self.generate_signature('POST', endpoint)
+        #headers['Accept'] = 'application/json'
         response = session.post(url, headers=headers).json()
         return response
     
 class Bot():
     def __init__(self, _exchange):
         self.exchange = _exchange
-        self.sleeping_time = 5
+        self.sleeping_time = 2
         self.my_last_bid = 0
         self.my_last_ask = 0
         self.my_last_quantity = 0
@@ -112,9 +126,11 @@ class Bot():
 
     def trade(self):
         while True:
-            position, current_quantity = self.exchange.get_position()
-            if current_quantity == 0:
-                time.sleep(self.sleeping_time)
+            #position, current_quantity = self.exchange.get_position()
+            #if current_quantity == 0:
+            time.sleep(self.sleeping_time)
+            # else:
+            #     time.sleep(1)
             self.calculate_change()
         
             
