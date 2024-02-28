@@ -41,9 +41,7 @@ class Exchange():
         endpoint = f'quote?symbol={self.symbol}&count=1&reverse=true'
         url = self.base_url + endpoint
         headers = self.generate_signature('GET', endpoint)
-        #headers['Accept'] = 'application/json'
         response = session.get(url, headers=headers).json()
-        #bid, ask = response[0]['bidPrice'], response[0]['askPrice']
         try:
             print("try quote")
             bid, ask = response[0]['bidPrice'], response[0]['askPrice']
@@ -55,10 +53,7 @@ class Exchange():
         endpoint = f'position?filter=%7B%22symbol%22%3A%20%22{self.symbol}%22%7D'
         url = self.base_url + endpoint
         headers = self.generate_signature('GET', endpoint)
-        #headers['Accept'] = 'application/json'
         response = session.get(url, headers=headers).json()
-        print(response)
-        #isOpen, quantity = response[0]['isOpen'], response[0]['currentQty']
         try: 
             print("try position")
             isOpen, quantity = response[0]['isOpen'], response[0]['currentQty']
@@ -80,22 +75,48 @@ class Exchange():
         data_json = json.dumps(data)
         headers = self.generate_signature('POST', endpoint, data_json)
         headers['Content-Type'] = 'application/json'
-        #headers['Accept'] = 'application/json'
         response = session.post(url, headers=headers, data=data_json).json()
         return response
     
-    def cancel_orders(self, timeout = 1):
+    def cancel_all_orders(self, timeout = 1):
         endpoint = f'order/cancelAllAfter?timeout={timeout}'
         url = self.base_url + endpoint
         headers = self.generate_signature('POST', endpoint)
-        #headers['Accept'] = 'application/json'
         response = session.post(url, headers=headers).json()
         return response
+    
+    def delete_all_orders(self):
+        endpoint = f'order/all'
+        url = self.base_url + endpoint
+        headers = self.generate_signature('DELETE', endpoint)
+        response = session.delete(url, headers=headers).json()
+        return response
+    
+    def get_orders(self):
+        endpoint = f'order?count=2&reverse=true'
+        url = self.base_url + endpoint
+        headers = self.generate_signature('GET', endpoint)
+        response = session.get(url, headers=headers).json()
+        try: 
+            print("try get orders")
+            order1_id, order2_id = response[0]['orderID'], response[1]['orderID']
+        except KeyError as e:
+            order1_id, order2_id = self.get_orders()
+        return order1_id, order2_id
+    
+    def delete_order(self, order_id):
+        endpoint = f'order/{order_id}'
+        url = self.base_url + endpoint
+        print(url)
+        headers = self.generate_signature('DELETE', endpoint)
+        response = session.delete(url, headers=headers).json()
+        return response
+
     
 class Bot():
     def __init__(self, _exchange):
         self.exchange = _exchange
-        self.sleeping_time = 2
+        self.sleeping_time = 10
         self.my_last_bid = 0
         self.my_last_ask = 0
         self.my_last_quantity = 0
@@ -121,16 +142,14 @@ class Bot():
         if ask != self.my_last_ask and current_quantity >= 0:
             changed = True
         if changed:
-            self.exchange.cancel_orders()
+            self.exchange.delete_all_orders()
+            #delete self.old orders
+            #self.old orders =
             self.calculate_order(current_quantity, bid, ask)
 
     def trade(self):
         while True:
-            #position, current_quantity = self.exchange.get_position()
-            #if current_quantity == 0:
             time.sleep(self.sleeping_time)
-            # else:
-            #     time.sleep(1)
             self.calculate_change()
         
             
@@ -138,4 +157,6 @@ class Bot():
 
 bitmex = Exchange(False)
 bot = Bot(bitmex)
+#order1, order2 = bitmex.get_orders()
+#print(bitmex.delete_order(order1))
 bot.trade()
