@@ -60,20 +60,8 @@ class Exchange():
         response = requests.post(url, headers=headers, data=data_json).json()
         return response
     
-    def cancel_orders2(self):
-        endpoint = 'order/cancelAllAfter'
-        url = self.base_url + endpoint
-        data = {
-            'timeout': 1
-        }
-        data_json = json.dumps(data)
-        headers = self.generate_signature('POST', endpoint, data_json)
-        headers['Content-Type'] = 'application/json'
-        response = requests.post(url, headers=headers, data=data_json).json()
-        return response
-    
-    def cancel_orders(self, timeout):
-        endpoint = f'order/cancelAllAfter?timeout={timeout*1000}'
+    def cancel_orders(self, timeout = 1):
+        endpoint = f'order/cancelAllAfter?timeout={timeout}'
         url = self.base_url + endpoint
         headers = self.generate_signature('POST', endpoint)
         response = requests.post(url, headers=headers).json()
@@ -82,28 +70,41 @@ class Exchange():
 class Bot():
     def __init__(self, _exchange):
         self.exchange = _exchange
-        self.sleeping_time = 10
-        self.last_bid = 0
-        self.last_ask = 0
+        self.sleeping_time = 5
+        self.my_last_bid = 0
+        self.my_last_ask = 0
+        self.my_last_quantity = 0
         
     def calculate_order(self):
         position, current_quantity = self.exchange.get_position()
         quantity = abs(current_quantity) + self.exchange.standard_quantity
         bid, ask = self.exchange.get_quote()
-        if current_quantity >= 0 and self.last_ask != ask:
+        if current_quantity >= 0:
             self.exchange.place_order('Sell', quantity, ask)
-            self.last_ask = ask
-        if current_quantity <= 0 and self.last_bid != bid:
+            self.my_last_ask = ask
+        if current_quantity <= 0:
             self.exchange.place_order('Buy', quantity, bid)
-            self.last_bid = bid
+            self.my_last_bid = bid
+
+    def calculate_change(self):
+        changed = False
+        bid, ask = self.exchange.get_quote()
+        if bid != self.my_last_bid or ask != self.my_last_ask:
+            changed = True
+        position, current_quantity = self.exchange.get_position()
+        if current_quantity != self.my_last_quantity:
+            changed = True
+        self.my_last_quantity = current_quantity
+        if changed:
+            self.exchange.cancel_orders()
+            self.calculate_order()
+
+
 
     def trade(self):
         while True:
-            bid, ask = self.exchange.get_quote()
-            if bid != self.last_bid or ask != self.last_ask:
-                self.exchange.cancel_orders(self.sleeping_time-1)
             time.sleep(self.sleeping_time)
-            self.calculate_order()
+            self.calculate_change()
         
             
 
@@ -116,7 +117,7 @@ bitmex = Exchange()
 #print(bitmex.place_order('Buy',1000,60000))
 bot = Bot(bitmex)
 #print(bot.calculate_order())
-#bitmex.place_order('Sell', 1000, 60000)
 #time.sleep(5)
-#print(bitmex.cancel_orders(1))
+#print(bitmex.cancel_orders(100))
+#bitmex.place_order('Sell', 1000, 60000)
 bot.trade()
