@@ -90,7 +90,7 @@ class Exchange():
 class Bot():
     def __init__(self, _exchange):
         self.exchange = _exchange
-        self.sleeping_time = 1
+        self.sleeping_time = 2
         self.my_last_bid = 0
         self.my_last_ask = 0
         self.my_last_quantity = 0
@@ -106,15 +106,15 @@ class Bot():
 
     def calculate_change(self):
         changed = False
-        position, current_quantity = self.exchange.get_position()
-        if current_quantity != self.my_last_quantity:
-            changed = True
-        self.my_last_quantity = current_quantity
         bid, ask = self.exchange.get_quote()
+        position, current_quantity = self.exchange.get_position()
         if bid != self.my_last_bid and current_quantity <= 0:
             changed = True
         if ask != self.my_last_ask and current_quantity >= 0:
             changed = True
+        if current_quantity != self.my_last_quantity:
+            changed = True
+        self.my_last_quantity = current_quantity
         if changed:
             self.exchange.delete_all_orders()
             self.calculate_order(current_quantity, bid, ask)
