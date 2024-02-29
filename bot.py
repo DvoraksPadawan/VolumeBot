@@ -90,7 +90,7 @@ class Exchange():
 class Bot():
     def __init__(self, _exchange):
         self.exchange = _exchange
-        self.sleeping_time = 5
+        self.sleeping_time = 3
         self.black_time = 3
         self.my_last_bid = 0
         self.my_last_ask = 0
